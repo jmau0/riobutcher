@@ -296,12 +296,12 @@ export default function DashboardPage() {
                         <Calendar className="h-5 w-5" />
                         Métricas
                     </h3>
-                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 overflow-x-auto scrollbar-hide max-w-full">
                         <Button
                             variant="ghost"
                             size="sm"
                             className={cn(
-                                "h-8 px-3 rounded-md text-sm",
+                                "h-8 px-3 rounded-md text-sm whitespace-nowrap",
                                 timePeriod === 'today' ? "bg-white shadow-sm" : "hover:bg-gray-200"
                             )}
                             onClick={() => setTimePeriod('today')}
@@ -312,7 +312,7 @@ export default function DashboardPage() {
                             variant="ghost"
                             size="sm"
                             className={cn(
-                                "h-8 px-3 rounded-md text-sm",
+                                "h-8 px-3 rounded-md text-sm whitespace-nowrap",
                                 timePeriod === 'week' ? "bg-white shadow-sm" : "hover:bg-gray-200"
                             )}
                             onClick={() => setTimePeriod('week')}
@@ -323,7 +323,7 @@ export default function DashboardPage() {
                             variant="ghost"
                             size="sm"
                             className={cn(
-                                "h-8 px-3 rounded-md text-sm",
+                                "h-8 px-3 rounded-md text-sm whitespace-nowrap",
                                 timePeriod === 'month' ? "bg-white shadow-sm" : "hover:bg-gray-200"
                             )}
                             onClick={() => setTimePeriod('month')}
@@ -334,7 +334,7 @@ export default function DashboardPage() {
                             variant="ghost"
                             size="sm"
                             className={cn(
-                                "h-8 px-3 rounded-md text-sm",
+                                "h-8 px-3 rounded-md text-sm whitespace-nowrap",
                                 timePeriod === 'all' ? "bg-white shadow-sm" : "hover:bg-gray-200"
                             )}
                             onClick={() => setTimePeriod('all')}

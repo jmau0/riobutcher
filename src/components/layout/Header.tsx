@@ -20,10 +20,7 @@ export function Header() {
             <h1 className="text-lg font-semibold">Painel de Controle</h1>
 
             <div className="ml-auto flex items-center gap-2 lg:gap-4">
-                <span className="text-xs lg:text-sm text-muted-foreground hidden sm:inline">
-                    Usuário: riobutcher
-                </span>
-                <div className="h-8 w-8 rounded-full bg-primary/20" />
+                {/* Avatar removido conforme solicitado */}
             </div>
         </header>
     );

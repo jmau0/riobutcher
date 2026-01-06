@@ -77,13 +77,16 @@ export function Sidebar() {
                 </nav>
 
                 <div className="p-4 border-t border-gray-100">
-                    <Link
-                        href="/login"
-                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                    <button
+                        onClick={() => {
+                            document.cookie = "auth=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+                            window.location.href = "/login";
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors text-left"
                     >
                         <LogOut className="h-4 w-4" />
                         Sair
-                    </Link>
+                    </button>
                 </div>
             </aside>
         </>

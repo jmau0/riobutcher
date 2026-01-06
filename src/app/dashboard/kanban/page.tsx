@@ -570,22 +570,24 @@ export default function KanbanPage() {
                             </div>
 
                             {/* Chat Messages */}
-                            <div ref={chatContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-8 space-y-4 lg:space-y-6 bg-[#FAF8F5]">
-                                {messages.map((msg) => (
-                                    <div key={msg.id} className={cn("flex", msg.role === 'assistant' ? "justify-end" : "justify-start")}>
-                                        <div className={cn(
-                                            "max-w-[85%] lg:max-w-[65%] rounded-2xl px-4 lg:px-6 py-3 lg:py-4 text-sm shadow-sm transition-all",
-                                            msg.role === 'assistant'
-                                                ? "bg-[#16697A] text-white rounded-br-none shadow-md"
-                                                : "bg-white border border-gray-100 text-gray-800 rounded-bl-none shadow-sm"
-                                        )}>
-                                            <p className="leading-relaxed text-[13px] lg:text-sm break-words whitespace-pre-wrap">{msg.content}</p>
-                                            <span className={cn("block text-[10px] mt-2 text-right opacity-70", msg.role === 'assistant' ? "text-white" : "text-gray-400")}>
-                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+                            <div ref={chatContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-8 bg-[#FAF8F5]">
+                                <div className="max-w-4xl mx-auto w-full space-y-4 lg:space-y-6">
+                                    {messages.map((msg) => (
+                                        <div key={msg.id} className={cn("flex", msg.role === 'assistant' ? "justify-end" : "justify-start")}>
+                                            <div className={cn(
+                                                "max-w-[85%] lg:max-w-[65%] rounded-2xl px-4 lg:px-6 py-3 lg:py-4 text-sm shadow-sm transition-all",
+                                                msg.role === 'assistant'
+                                                    ? "bg-[#16697A] text-white rounded-br-none shadow-md"
+                                                    : "bg-white border border-gray-100 text-gray-800 rounded-bl-none shadow-sm"
+                                            )}>
+                                                <p className="leading-relaxed text-[13px] lg:text-sm break-words whitespace-pre-wrap">{msg.content}</p>
+                                                <span className={cn("block text-[10px] mt-2 text-right opacity-70", msg.role === 'assistant' ? "text-white" : "text-gray-400")}>
+                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
 
                             {/* Chat Input */}
