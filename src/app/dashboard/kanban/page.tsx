@@ -244,7 +244,27 @@ export default function KanbanPage() {
                     content: cleanMessage(newMsgRaw.message),
                     created_at: newMsgRaw.created_at || new Date().toISOString()
                 };
-                setMessages(prev => [...prev, newMsg]);
+
+                // Verificar se já existe uma mensagem com o mesmo conteúdo recente (últimos 10 segundos)
+                // Isso evita duplicação quando a mensagem otimista já foi adicionada
+                setMessages(prev => {
+                    const isDuplicate = prev.some(msg => {
+                        const isSameContent = msg.content === newMsg.content;
+                        const timeDiff = Math.abs(
+                            new Date(msg.created_at).getTime() - new Date(newMsg.created_at).getTime()
+                        );
+                        // Considera duplicata se conteúdo igual e timestamp dentro de 10s
+                        return isSameContent && timeDiff < 10000;
+                    });
+
+                    if (isDuplicate) {
+                        console.log('[Realtime] Mensagem duplicada detectada, ignorando:', newMsg.content.substring(0, 50));
+                        return prev; // Não adiciona
+                    }
+
+                    console.log('[Realtime] Nova mensagem recebida:', newMsg.content.substring(0, 50));
+                    return [...prev, newMsg];
+                });
             })
             .subscribe();
 
