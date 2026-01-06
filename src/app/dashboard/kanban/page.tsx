@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { User, Search, Filter, MoreVertical, Send, Phone, Video, Info, MessageCircle, RefreshCw, Trash2 } from "lucide-react";
+import { Search, Send, MessageCircle, RefreshCw, Trash2, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -35,6 +35,7 @@ export default function KanbanPage() {
     const [activeTab, setActiveTab] = useState<'todos' | 'urgentes'>('todos');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
+    const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
     const selectedLead = leads.find(l => l.session_id === selectedLeadId);
@@ -93,7 +94,17 @@ export default function KanbanPage() {
         return 'user';
     }
 
-    // 1. Fetch Leads
+    // Handle lead selection - also switch to chat view on mobile
+    const handleSelectLead = (sessionId: string) => {
+        setSelectedLeadId(sessionId);
+        setMobileView('chat');
+    };
+
+    // Handle back to list on mobile
+    const handleBackToList = () => {
+        setMobileView('list');
+    };
+
     // 1. Fetch Leads - Using dados_cliente as primary source
     const fetchLeads = useCallback(async () => {
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -157,7 +168,7 @@ export default function KanbanPage() {
         } finally {
             setLoading(false);
         }
-    }, [selectedLeadId]); // Added selectedLeadId as dep because it checks it inside
+    }, [selectedLeadId]);
 
     // Initial fetch
     useEffect(() => {
@@ -323,6 +334,7 @@ export default function KanbanPage() {
                 setLeads(prev => prev.filter(l => l.session_id !== selectedLeadId));
                 setSelectedLeadId(null);
                 setMessages([]);
+                setMobileView('list');
                 console.log('[DeleteLead] Lead deleted successfully');
             }
         } catch (error) {
@@ -368,16 +380,19 @@ export default function KanbanPage() {
 
     return (
         <>
-            <div className="flex bg-white h-[calc(100vh-8rem)] rounded-xl border border-gray-200 overflow-hidden shadow-lg">
-                {/* Left Sidebar: List */}
-                <div className="w-80 border-r border-gray-200 flex flex-col bg-white">
+            <div className="flex bg-white h-[calc(100vh-8rem)] lg:h-[calc(100vh-8rem)] rounded-xl border border-gray-200 overflow-hidden shadow-lg">
+                {/* Left Sidebar: List - Hidden on mobile when viewing chat */}
+                <div className={cn(
+                    "w-full lg:w-80 border-r border-gray-200 flex flex-col bg-white",
+                    mobileView === 'chat' ? "hidden lg:flex" : "flex"
+                )}>
                     <div className="p-4 border-b border-gray-100 space-y-4">
                         <h2 className="font-semibold text-lg text-gray-800">Conversas</h2>
                         <div className="relative">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
                             <Input placeholder="Buscar por nome ou telefone..." className="pl-8 bg-gray-50 border-gray-200" />
                         </div>
-                        <div className="flex items-center gap-2 mb-4 px-4">
+                        <div className="flex items-center gap-2">
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -429,7 +444,7 @@ export default function KanbanPage() {
                             .map((lead) => (
                                 <div
                                     key={lead.session_id}
-                                    onClick={() => setSelectedLeadId(lead.session_id)}
+                                    onClick={() => handleSelectLead(lead.session_id)}
                                     className={cn(
                                         "p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-all duration-200 relative group",
                                         selectedLeadId === lead.session_id
@@ -500,59 +515,71 @@ export default function KanbanPage() {
                     </div>
                 </div>
 
-                {/* Right Area: Chat */}
-                <div className="flex-1 flex flex-col bg-gray-50">
+                {/* Right Area: Chat - Hidden on mobile when viewing list */}
+                <div className={cn(
+                    "flex-1 flex flex-col bg-gray-50",
+                    mobileView === 'list' ? "hidden lg:flex" : "flex"
+                )}>
                     {selectedLead ? (
                         <>
                             {/* Chat Header */}
-                            <div className="h-16 border-b border-gray-200 flex items-center justify-between px-6 bg-white">
-                                <div className="flex items-center gap-3">
+                            <div className="h-14 lg:h-16 border-b border-gray-200 flex items-center justify-between px-3 lg:px-6 bg-white">
+                                <div className="flex items-center gap-2 lg:gap-3">
+                                    {/* Back button for mobile */}
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="lg:hidden h-8 w-8 text-gray-600"
+                                        onClick={handleBackToList}
+                                    >
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </Button>
                                     <div className="relative">
-                                        <div className="h-10 w-10 rounded-full bg-[#16697A]/10 flex items-center justify-center text-[#16697A] font-bold border border-[#16697A]/20">
+                                        <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-[#16697A]/10 flex items-center justify-center text-[#16697A] font-bold text-xs lg:text-sm border border-[#16697A]/20">
                                             {selectedLead.name.substring(0, 2).toUpperCase()}
                                         </div>
-                                        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+                                        <span className="absolute bottom-0 right-0 h-2 w-2 lg:h-2.5 lg:w-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
                                     </div>
                                     <div className="flex flex-col">
-                                        <h3 className="font-semibold text-sm text-gray-900 leading-tight">{selectedLead.name}</h3>
-                                        <span className="text-[11px] text-green-600 font-medium flex items-center gap-1">
-                                            • Online agora
+                                        <h3 className="font-semibold text-xs lg:text-sm text-gray-900 leading-tight truncate max-w-[120px] lg:max-w-none">{selectedLead.name}</h3>
+                                        <span className="text-[10px] lg:text-[11px] text-green-600 font-medium flex items-center gap-1">
+                                            • Online
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 border border-gray-200 shadow-sm">
-                                        <span className="text-xs font-medium text-gray-600">IA ATIVA</span>
+                                <div className="flex items-center gap-1 lg:gap-3">
+                                    <div className="flex items-center gap-1 lg:gap-2 bg-gray-50 rounded-lg px-2 lg:px-3 py-1 lg:py-1.5 border border-gray-200 shadow-sm">
+                                        <span className="text-[10px] lg:text-xs font-medium text-gray-600 hidden sm:inline">IA</span>
                                         <Switch
                                             checked={!selectedLead.agent_paused} // Checked = AI Active
                                             onCheckedChange={() => togglePause(selectedLead.session_id, selectedLead.agent_paused)}
-                                            className={cn("scale-75", !selectedLead.agent_paused ? "bg-green-500" : "bg-zinc-200")}
+                                            className={cn("scale-[0.6] lg:scale-75", !selectedLead.agent_paused ? "bg-green-500" : "bg-zinc-200")}
                                         />
                                     </div>
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
+                                        className="h-7 w-7 lg:h-8 lg:w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
                                         onClick={() => setShowDeleteConfirm(true)}
                                         title="Excluir lead"
                                     >
-                                        <Trash2 className="h-4 w-4" />
+                                        <Trash2 className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
                                     </Button>
                                 </div>
                             </div>
 
                             {/* Chat Messages */}
-                            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-8 space-y-6 bg-[#FAF8F5]">
+                            <div ref={chatContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-8 space-y-4 lg:space-y-6 bg-[#FAF8F5]">
                                 {messages.map((msg) => (
                                     <div key={msg.id} className={cn("flex", msg.role === 'assistant' ? "justify-end" : "justify-start")}>
                                         <div className={cn(
-                                            "max-w-[65%] rounded-2xl px-6 py-4 text-sm shadow-sm transition-all",
+                                            "max-w-[85%] lg:max-w-[65%] rounded-2xl px-4 lg:px-6 py-3 lg:py-4 text-sm shadow-sm transition-all",
                                             msg.role === 'assistant'
                                                 ? "bg-[#16697A] text-white rounded-br-none shadow-md"
                                                 : "bg-white border border-gray-100 text-gray-800 rounded-bl-none shadow-sm"
                                         )}>
-                                            <p className="leading-relaxed">{msg.content}</p>
+                                            <p className="leading-relaxed text-[13px] lg:text-sm break-words whitespace-pre-wrap">{msg.content}</p>
                                             <span className={cn("block text-[10px] mt-2 text-right opacity-70", msg.role === 'assistant' ? "text-white" : "text-gray-400")}>
                                                 {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
@@ -562,27 +589,27 @@ export default function KanbanPage() {
                             </div>
 
                             {/* Chat Input */}
-                            <div className="p-6 bg-white border-t border-gray-100">
-                                <div className="flex gap-3 items-center max-w-4xl mx-auto w-full">
+                            <div className="p-3 lg:p-6 bg-white border-t border-gray-100">
+                                <div className="flex gap-2 lg:gap-3 items-center max-w-4xl mx-auto w-full">
                                     <Input
                                         value={msgInput}
                                         onChange={(e) => setMsgInput(e.target.value)}
                                         placeholder="Digite sua mensagem..."
-                                        className="flex-1 bg-gray-50 border-gray-200 focus-visible:ring-[#16697A] h-11 rounded-xl shadow-inner text-gray-900 placeholder:text-gray-400"
+                                        className="flex-1 bg-gray-50 border-gray-200 focus-visible:ring-[#16697A] h-10 lg:h-11 rounded-xl shadow-inner text-gray-900 placeholder:text-gray-400 text-sm"
                                         onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                                     />
-                                    <Button onClick={sendMessage} size="icon" className="h-11 w-11 rounded-xl bg-[#16697A] hover:bg-[#125866] shadow-md transition-all active:scale-95">
-                                        <Send className="h-5 w-5" />
+                                    <Button onClick={sendMessage} size="icon" className="h-10 w-10 lg:h-11 lg:w-11 rounded-xl bg-[#16697A] hover:bg-[#125866] shadow-md transition-all active:scale-95">
+                                        <Send className="h-4 w-4 lg:h-5 lg:w-5" />
                                     </Button>
                                 </div>
                             </div>
                         </>
                     ) : (
-                        <div className="flex-1 flex items-center justify-center text-gray-400 flex-col gap-4">
+                        <div className="flex-1 flex items-center justify-center text-gray-400 flex-col gap-4 p-4">
                             <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
                                 <MessageCircle className="h-8 w-8 text-gray-300" />
                             </div>
-                            <p>Selecione uma conversa para iniciar</p>
+                            <p className="text-center">Selecione uma conversa para iniciar</p>
                         </div>
                     )}
                 </div>
@@ -591,8 +618,8 @@ export default function KanbanPage() {
             {/* Delete Confirmation Modal */}
             {
                 showDeleteConfirm && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">Excluir Lead</h3>
                             <p className="text-gray-600 mb-6">
                                 Tem certeza que deseja excluir o lead <strong>{selectedLead?.name}</strong>? Esta ação não pode ser desfeita.
