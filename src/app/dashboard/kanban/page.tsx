@@ -40,13 +40,79 @@ export default function KanbanPage() {
 
     const selectedLead = leads.find(l => l.session_id === selectedLeadId);
 
+    // Helper to check if content is an orchestrator routing message (should be hidden)
+    const isRoutingMessage = (content: any): boolean => {
+        if (!content) return false;
+
+        // Convert to string for pattern matching
+        const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+        const lower = contentStr.toLowerCase();
+
+        // Exact patterns for orchestrator routing messages
+        const routingPatterns = [
+            '"route"',
+            '"output"',
+            '"reason"',
+            'routing to',
+            'route to kit',
+            'route to normal',
+            'agente comum',
+            'kit agent',
+            '"route":"kit"',
+            '"route":"normal"',
+            '"route": "kit"',
+            '"route": "normal"',
+            '{"output":',
+            '{ "output":',
+            '"output": {',
+            '"output":{',
+        ];
+
+        for (const pattern of routingPatterns) {
+            if (lower.includes(pattern)) {
+                return true;
+            }
+        }
+
+        // Check if it's an object with routing properties
+        if (typeof content === 'object' && content !== null) {
+            if (content.route || content.output || content.reason) {
+                return true;
+            }
+            // Check nested output object
+            if (content.output && (content.output.route || content.output.reason)) {
+                return true;
+            }
+        }
+
+        // Check if the entire message is just a short routing response
+        const trimmed = contentStr.trim();
+        if (trimmed.startsWith('{') && trimmed.endsWith('}') && trimmed.length < 100) {
+            // Short JSON that might be routing
+            if (lower.includes('route') || lower.includes('output')) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
     // Helper to clean message content
     const cleanMessage = (content: any): string => {
         if (!content) return "";
 
+        // Filter out orchestrator routing messages
+        if (isRoutingMessage(content)) {
+            return ""; // Return empty to hide this message
+        }
+
         // 1. If it's an object (JSONB)
         if (typeof content === 'object') {
-            return content.content || content.message || content.text || JSON.stringify(content);
+            // Check for routing patterns in object
+            if (content.route || content.output?.route) {
+                return ""; // Hide routing messages
+            }
+            return content.content || content.message || content.text || "";
         }
 
         // 2. If it's a string
@@ -61,11 +127,25 @@ export default function KanbanPage() {
         if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
             try {
                 const parsed = JSON.parse(cleaned);
+
+                // Check if parsed JSON is a routing message
+                if (isRoutingMessage(parsed)) {
+                    return ""; // Hide routing messages
+                }
+
                 // Recursively clean the parsed object
                 return cleanMessage(parsed);
             } catch (e) {
-                // Not a valid JSON, just return the cleaned string
+                // Not a valid JSON, check if it still contains routing patterns
+                if (isRoutingMessage(cleaned)) {
+                    return "";
+                }
             }
+        }
+
+        // Final check for routing patterns in plain text
+        if (isRoutingMessage(cleaned)) {
+            return "";
         }
 
         return cleaned;
@@ -592,7 +672,7 @@ export default function KanbanPage() {
                             {/* Chat Messages */}
                             <div ref={chatContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-8 bg-[#FAF8F5]">
                                 <div className="max-w-4xl mx-auto w-full space-y-4 lg:space-y-6">
-                                    {messages.map((msg) => (
+                                    {messages.filter(msg => msg.content && msg.content.trim() !== '').map((msg) => (
                                         <div key={msg.id} className={cn("flex", msg.role === 'assistant' ? "justify-end" : "justify-start")}>
                                             <div className={cn(
                                                 "max-w-[85%] lg:max-w-[65%] rounded-2xl px-4 lg:px-6 py-3 lg:py-4 text-sm shadow-sm transition-all",
