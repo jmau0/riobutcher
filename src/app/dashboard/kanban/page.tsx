@@ -648,7 +648,7 @@ export default function KanbanPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-1 lg:gap-3">
+                                <div className="flex items-center gap-1 lg:gap-3 flex-shrink-0">
                                     <div className="flex items-center gap-1 lg:gap-2 bg-gray-50 rounded-lg px-2 lg:px-3 py-1 lg:py-1.5 border border-gray-200 shadow-sm">
                                         <span className="text-[10px] lg:text-xs font-medium text-gray-600 hidden sm:inline">IA</span>
                                         <Switch
@@ -660,11 +660,11 @@ export default function KanbanPage() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 lg:h-8 lg:w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
+                                        className="h-8 w-8 lg:h-9 lg:w-9 text-red-500 hover:text-red-600 hover:bg-red-50"
                                         onClick={() => setShowDeleteConfirm(true)}
                                         title="Excluir lead"
                                     >
-                                        <Trash2 className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
+                                        <Trash2 className="h-4 w-4 lg:h-5 lg:w-5" />
                                     </Button>
                                 </div>
                             </div>
