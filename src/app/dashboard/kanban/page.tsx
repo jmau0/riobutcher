@@ -48,10 +48,14 @@ export default function KanbanPage() {
         const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
         const lower = contentStr.toLowerCase();
 
+        // FIRST: Check if it contains "mensagem" - this is an output parser response, NOT routing
+        if (lower.includes('"mensagem"') || lower.includes('"mensagem":')) {
+            return false; // Not a routing message, it's a valid message to display
+        }
+
         // Exact patterns for orchestrator routing messages
         const routingPatterns = [
             '"route"',
-            '"output"',
             '"reason"',
             'routing to',
             'route to kit',
@@ -62,10 +66,6 @@ export default function KanbanPage() {
             '"route":"normal"',
             '"route": "kit"',
             '"route": "normal"',
-            '{"output":',
-            '{ "output":',
-            '"output": {',
-            '"output":{',
         ];
 
         for (const pattern of routingPatterns) {
@@ -76,10 +76,15 @@ export default function KanbanPage() {
 
         // Check if it's an object with routing properties
         if (typeof content === 'object' && content !== null) {
+            // If it has a mensagem field, it's an output parser response, NOT a routing message
+            if (content.output?.mensagem || content.mensagem) {
+                return false;
+            }
+
             if (content.route || content.output || content.reason) {
                 return true;
             }
-            // Check nested output object
+            // Check nested output object for routing
             if (content.output && (content.output.route || content.output.reason)) {
                 return true;
             }
@@ -108,10 +113,45 @@ export default function KanbanPage() {
 
         // 1. If it's an object (JSONB)
         if (typeof content === 'object') {
-            // Check for routing patterns in object
+            // Check for routing patterns in object (but not output parser messages)
             if (content.route || content.output?.route) {
                 return ""; // Hide routing messages
             }
+
+            // Check for output parser format with mensagem field
+            if (content.output?.mensagem) {
+                return content.output.mensagem;
+            }
+            if (content.mensagem) {
+                return content.mensagem;
+            }
+
+            // If object has 'content' field that is a string, process it
+            if (typeof content.content === 'string') {
+                const innerContent = content.content.trim();
+
+                // Check if inner content is JSON with output parser format
+                if (innerContent.startsWith('{') && innerContent.endsWith('}')) {
+                    try {
+                        const parsed = JSON.parse(innerContent);
+                        // Check for output parser format
+                        if (parsed.output?.mensagem) {
+                            return parsed.output.mensagem;
+                        }
+                        if (parsed.mensagem) {
+                            return parsed.mensagem;
+                        }
+                        // Recursively process
+                        return cleanMessage(parsed);
+                    } catch (e) {
+                        // Not valid JSON, return as is
+                    }
+                }
+
+                // Return the content field directly
+                return innerContent;
+            }
+
             return content.content || content.message || content.text || "";
         }
 
