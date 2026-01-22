@@ -17,6 +17,8 @@ interface Lead {
     agent_paused: boolean;
     urgent?: boolean;
     unread?: number;
+    lastMsgId?: number;
+    hasUnread?: boolean;
 }
 
 interface Message {
@@ -36,7 +38,20 @@ export default function KanbanPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
+    const [readStates, setReadStates] = useState<Record<string, number>>({});
     const chatContainerRef = useRef<HTMLDivElement>(null);
+
+    // Load read states from localStorage on mount
+    useEffect(() => {
+        const stored = localStorage.getItem('kanban_read_states');
+        if (stored) {
+            try {
+                setReadStates(JSON.parse(stored));
+            } catch (e) {
+                console.error('Error parsing read states from localStorage:', e);
+            }
+        }
+    }, []);
 
     const selectedLead = leads.find(l => l.session_id === selectedLeadId);
 
@@ -214,10 +229,23 @@ export default function KanbanPage() {
         return 'user';
     }
 
-    // Handle lead selection - also switch to chat view on mobile
+    // Handle lead selection - also switch to chat view on mobile and mark as read
     const handleSelectLead = (sessionId: string) => {
         setSelectedLeadId(sessionId);
         setMobileView('chat');
+
+        // Mark this lead as read by storing the last message ID
+        const lead = leads.find(l => l.session_id === sessionId);
+        if (lead?.lastMsgId) {
+            const newReadStates = { ...readStates, [sessionId]: lead.lastMsgId };
+            setReadStates(newReadStates);
+            localStorage.setItem('kanban_read_states', JSON.stringify(newReadStates));
+
+            // Update lead's hasUnread state
+            setLeads(prev => prev.map(l =>
+                l.session_id === sessionId ? { ...l, hasUnread: false } : l
+            ));
+        }
     };
 
     // Handle back to list on mobile
@@ -253,13 +281,26 @@ export default function KanbanPage() {
                 // Get last message from medx34_history
                 const { data: msgs } = await supabase
                     .from('medx34_history')
-                    .select('message, id')
+                    .select('message, id, created_at')
                     .eq('session_id', client.sessionid)
                     .order('id', { ascending: false })
                     .limit(1);
 
                 const lastMsgRow = msgs?.[0];
                 const rawContent = lastMsgRow?.message;
+                const lastMsgTime = lastMsgRow?.created_at;
+                const lastMsgId = lastMsgRow?.id;
+
+                // Format the time from the last message
+                let formattedTime = "";
+                if (lastMsgTime) {
+                    const date = new Date(lastMsgTime);
+                    formattedTime = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                }
+
+                // Check if there are unread messages
+                const lastReadId = readStates[client.sessionid] || 0;
+                const hasUnread = lastMsgId ? lastMsgId > lastReadId : false;
 
                 // Determine paused state directly from dados_cliente.atendimento
                 const isPaused = client.atendimento === 'human';
@@ -269,10 +310,12 @@ export default function KanbanPage() {
                     name: client.nome || `Cliente ${client.sessionid?.slice(-4) || '????'}`,
                     phone: client.telefone || client.sessionid,
                     last_message: cleanMessage(rawContent) || "Iniciar conversa",
-                    last_time: "",
+                    last_time: formattedTime,
                     agent_paused: isPaused,
                     urgent: client.urgente === true || client.urgente === 'true',
-                    unread: 0
+                    unread: 0,
+                    lastMsgId: lastMsgId,
+                    hasUnread: hasUnread
                 };
             }));
 
@@ -288,7 +331,7 @@ export default function KanbanPage() {
         } finally {
             setLoading(false);
         }
-    }, [selectedLeadId]);
+    }, [selectedLeadId, readStates]);
 
     // Initial fetch
     useEffect(() => {
@@ -636,7 +679,15 @@ export default function KanbanPage() {
                                                 )}>
                                                     {lead.name}
                                                 </span>
-                                                <span className="text-[10px] text-gray-400 font-medium">{lead.last_time || '12:00'}</span>
+                                                <div className="flex items-center gap-2">
+                                                    {lead.hasUnread && (
+                                                        <span className="relative flex h-2.5 w-2.5">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                                                        </span>
+                                                    )}
+                                                    <span className="text-[10px] text-gray-400 font-medium">{lead.last_time}</span>
+                                                </div>
                                             </div>
                                             <p className={cn(
                                                 "text-xs truncate pr-2 leading-relaxed block",
